@@ -39,76 +39,76 @@ def bkz_simulation_stochastic (l, beta, Ntours, rk, l_format=2):
     l1 = [float(0) for i in range(n)]
     l2 = [float(0) for i in range(n)]
     for i in range(n):
-	l1[i] = l_fixed[i]
-	l2[i] = l_fixed[i]
-	
+        l1[i] = l_fixed[i]
+        l2[i] = l_fixed[i]
+
     # used for return the result
     l1_double = [l1[i]*l_format for i in range(n)]
 
     # (log of) multiplier in front of det^(1/n) of GH
     c = []
 
-    for d in xrange(1, beta + 1):
+    for d in range(1, beta + 1):
         vol = gso_analyze_vol_n(d,1)
         extra_common = 0 # for future use.
         common = -log(vol)/d + extra_common
         c.append(common)
 
     old_touched = [True for i in range(n)]
-    for tours in xrange(Ntours):
-        print "# stochastic tour ", tours
+    for tours in range(Ntours):
+        print("# stochastic tour ", tours)
 
-	##########################################
+        ##########################################
         ### 1. front blocks
         ##########################################
         new_touched = [False for i in range(n)]
-	
-	for start in xrange(n-45):
+
+        for start in range(n-45):
             # [start, end-1]
             bs = min(beta, n-start) # bs is current block-size starting at k, thus [k, k+bs-1]
             end = start + bs        # end of local block (exclusively)
 
-	    #current log-determinant
-	    logdet = sum(l2[:end]) - sum(l2[:start])
-            GH_0 = logdet/bs + c[bs-1]                
+            #current log-determinant
+            logdet = sum(l2[:end]) - sum(l2[:start])
+            GH_0 = logdet/bs + c[bs-1]
 
             to_be_changed = False
             for k in range(start, end):
                 to_be_changed = (to_be_changed or old_touched[k])
 
-	    radius = 0 # radius for enumeration
+            radius = 0 # radius for enumeration
             if (to_be_changed):
 
-	        #random variable distributed according to Expo[1/2]
-		eps = log(expovariate(0.5))/bs
-		GH = GH_0 + eps # our statistical model
+                #random variable distributed according to Expo[1/2]
+                eps = log(expovariate(0.5))/bs
+                GH = GH_0 + eps # our statistical model
                 decrease = l2[start] - GH # current value compared to chosen value
 
-		if (decrease > 0):		                                                
+                if (decrease > 0):
                     # new 2nd is set to be (bs-1)/bs times the old 1st; and average improve [start+2,end)
-		    #l2_temp = l2[start+1]
-		    l2[start] = GH
+                    #l2_temp = l2[start+1]
+                    l2[start] = GH
                     prop = (bs-1)*(bs**(-1))
 
-		    l2[start+1] = l1[start] + log(sqrt(prop))
+                    l2[start+1] = l1[start] + log(sqrt(prop))
 
-		    decrease2 =  decrease - (l2[start+1]-l1[start+1])
+                    decrease2 =  decrease - (l2[start+1]-l1[start+1])
 
                     for k in range(start+2,end):
                         l2[k] = l2[k] + decrease2/(bs-2)
                         new_touched[k] = True
                     
-	            new_touched[start] = True
-	            new_touched[start+1] = True
+                    new_touched[start] = True
+                    new_touched[start+1] = True
 
             # update l1 for the use of updating next block
-            for i in range(n): 	
-	        l1[i] = l2[i]
+            for i in range(n):
+                l1[i] = l2[i]
         ##########################################
         ### 2. last 45 blocks
         ##########################################
-	t = 45
-	logdet = sum(l2[:n]) - sum(l2[:n-t])
+        t = 45
+        logdet = sum(l2[:n]) - sum(l2[:n-t])
         # essentially builds an HKZ reduced bases for n < t = 45
         if n < t:
             tmp = sum(rk[-n:])/n
@@ -124,8 +124,8 @@ def bkz_simulation_stochastic (l, beta, Ntours, rk, l_format=2):
                 to_be_changed = (to_be_changed or new_touched[i])
             change_touch = False
             if (to_be_changed):
-	    	for k,r in zip(K, rk1[:45]):
-		    l2[k] = logdet/min(t,n) + r
+                for k,r in zip(K, rk1[:45]):
+                    l2[k] = logdet/min(t,n) + r
                     if ((l1[k] - l2[k]) > 1e-6):
                         change_touch = True
                 if (change_touch):
@@ -135,26 +135,27 @@ def bkz_simulation_stochastic (l, beta, Ntours, rk, l_format=2):
         ##########################################
         ###  early termination (optional)
         ##########################################
-	if l1 == l2:
-            print "# early-abort happends since no change"
+        if l1 == l2:
+            print("# early-abort happends since no change")
             l1_double = [l1[i]*l_format for i in range(n)]
-	    
+
             return l1_double
         
-	##########################################
+        ##########################################
         # 3. done this tour, copy
         ##########################################
-        old_touched = new_touched        
-	for i in range(n): 	
-	    l1[i] = l2[i]
-	
-	l1_double = [l1[i]*l_format for i in range(n)]
-	
-        print "done: ", tours
+        old_touched = new_touched
+        for i in range(n):
+            l1[i] = l2[i]
+
+        l1_double = [l1[i]*l_format for i in range(n)]
+
+        print("done: ", tours)
 
     # all done, final adjustment
     l1_double = [l1[i]*l_format for i in range(n)]
     return l1_double
 
-print sum(l)
-print bkz_simulation_stochastic (l, 60, 1000, rk_ln, 2)
+if __name__ == "__main__":
+    print(sum(l))
+    print(bkz_simulation_stochastic (l, 60, 1000, rk_ln, 2))
